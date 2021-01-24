@@ -29,7 +29,7 @@ var components_bootstrap = {
   'collapse-panel': {
     props: ['id', 'collapse', 'title'],
     template: `
-      <div class="accordion mt-3">
+      <div class="accordion m-3">
         <div class="accordion-item">
           <div class="accordion-header">
             <button class="accordion-button" v-bind:class="collapse=='true' ? 'collapsed' : ''" type="button" data-bs-toggle="collapse" v-bind:href="'#' + id"><label class='title'>{{title}}</label></button>
