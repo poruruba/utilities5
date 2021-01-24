@@ -184,10 +184,10 @@
                     <div class="row">
                         <span class="col-6">
                             <img v-if="!image_src" class="center-block" src="img/image_drop.png" v-on:drop="image_drop" v-on:dragover="file_drag">
-                            <img v-if="image_src" class="img-responsive img-thumbnail" v-bind:src="image_src" v-on:drop="image_drop" v-on:dragover="file_drag">
+                            <img v-if="image_src" class="img-fluid img-thumbnail" v-bind:src="image_src" v-on:drop="image_drop" v-on:dragover="file_drag">
                         </span>
                         <div class="col-1"></div>
-                        <canvas v-if="image_src" class="col-5 img-responsive img-thumbnail" id="image_icon"></canvas>
+                        <canvas v-if="image_src" class="col-5 img-fluid img-thumbnail" id="image_icon"></canvas>
                     </div>
                 </div>
             </div>
@@ -222,9 +222,9 @@
                             </div><br>
                             <button class="btn btn-primary" v-on:click="qrcode_scan()">{{qrcode_btn}}</button><br>
                             <div>
-                                <img class="img-responsive" v-show="!qrcode_running && qrcode_scaned_data==''" id="qrcode_start" src="./img/qrcode_start.png"><br>
-                                <video class="img-responsive" v-show="qrcode_running" id="qrcode_camera" autoplay></video>
-                                <canvas class="img-responsive" v-show="!qrcode_running && qrcode_scaned_data!=''" id="qrcode_canvas"></canvas>
+                                <img class="img-fluid" v-show="!qrcode_running && qrcode_scaned_data==''" id="qrcode_start" src="./img/qrcode_start.png"><br>
+                                <video class="img-fluid" v-show="qrcode_running" id="qrcode_camera" autoplay></video>
+                                <canvas class="img-fluid" v-show="!qrcode_running && qrcode_scaned_data!=''" id="qrcode_canvas"></canvas>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -1158,7 +1158,7 @@
                         </h4>
                     </div>
                     <div class="modal-body">
-                        <img v-if="binary_type.startsWith('image/')" v-bind:src="binary_dataurl" class="img-responsive" />
+                        <img v-if="binary_type.startsWith('image/')" v-bind:src="binary_dataurl" class="img-fluid" />
                         <pre v-if="binary_type.startsWith('text/')">{{binary_text}}</pre>
                     </div>
                 </div>
