@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data: content: blob:;">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+
+    <!-- Latest compiled and minified CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="dist/css/open-iconic-bootstrap.min.css">
+
+    <title>ユーティリティ</title>
+
+    <link rel="stylesheet" href="css/start.css">
+    <script src="js/methods_bootstrap.js"></script>
+    <script src="js/components_bootstrap.js"></script>
+    <script src="js/vue_utils.js"></script>
+  
+    <script src="dist/js/vconsole.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/siiimple-toast/dist/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/siiimple-toast/dist/siiimple-toast.min.js"></script>
+
+    <script src="dist/js/crypto-js.js"></script>
+    <script src="dist/js/base64url-arraybuffer.js"></script>
+    <script src="dist/js/qrcode.js"></script>
+    <script src="dist/js/jsQR.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.0.6/chroma.min.js"></script>
+
+    <script src="dist/js/jszip.min.js"></script>
+    <script src="dist/js/uuid.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.9.1/beautify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.9.1/beautify-css.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.9.1/beautify-html.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script async src="https://cdn.jsdelivr.net/npm/pwacompat" crossorigin="anonymous"></script></head>
+</head>
+<body>
+    <div id="top" class="container">
+        <ul class="nav nav-tabs">
+            <li v-for="(link, index) in favorite_link"><a class="nav-link" v-bind:href="'#' + link" data-bs-toggle="tab">{{get_tab_name(link)}}</a></li>
+            <li class="dropdown">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">ユーティリティ</a>
+                <ul class="dropdown-menu">
+                    <li v-for="(link, index) in tab_list"><a class="dropdown-item" v-bind:href="'#' + link.id" data-bs-toggle="tab" v-on:click="favorite_add(link.id)">{{link.name}}</a></li>
+                </ul>
+            </li>
+        </ul>
+
+        
+        <div class="tab-content">
+
+            <!--
+                BLE Central
+            -->
+            <div id="blecent" class="tab-pane fade">
+                <h2 class="modal-header">BLE Central</h2>
+                <button class="btn btn-primary" v-on:click="ble_connect()" v-if="!ble_isConnected">Connect</button>
+                <button class="btn btn-primary" v-on:click="ble_disconnect()" v-else>Disonnect</button>
+                <br><br>
+                <collapse-panel id="additional_services_panel" title="Additional Services" collapse="true">
+                  <span slot="content">
+                    <div class="card-body">
+                        <textarea class="form-control" v-model="ble_additional_services"></textarea>
+                    </div>
+                  </span>
+                </collapse-panel>
+
+                <div v-if="ble_device">
+                    <label class="title">id</label> {{ble_device.id}}<br>
+                    <label class="title">name</label> {{ble_device.name}}<br>
+                </div>
+                <button class="btn btn-secondary" v-on:click="ble_allread()" v-if="ble_isConnected">All Read</button>
+                <button class="btn btn-secondary" v-on:click="ble_allnotify()" v-if="ble_isConnected">All Notify</button>
+                <br><br>
+            
+                <div class="card" v-for="(service, index) in ble_services">
+                  <h3 class="card-header">{{find_service_name(service.uuid)}}</h3>
+                  <div class="card-body">
+                    <label class="title">uuid</label> {{service.uuid}}
+                    <br><br>
+                    <table class="table table-striped">
+                      <tr v-for="(characteristic, index) in service.characteristics">
+                        <td>
+                          <span data-bs-toggle="tooltip" v-bind:title="characteristic.properties">
+                            <label class="title">{{characteristic.uuid}}</label>
+                            <span v-if="find_characteristic_name(characteristic.uuid)"><br>{{find_characteristic_name(characteristic.uuid)}}</span>
+                          </span>
+                        </td>
+                        <td><span v-bind:class="{ 'has-success': characteristic.value_changed }">
+                          <span data-bs-toggle="tooltip" v-bind:title="ble_toStr(characteristic)">
+                            <input type="text" class="form-control" v-model="characteristic.value_hex">
+                          </span>
+                        </span></td>
+                        <td>
+                          <button class="btn btn-secondary btn-sm" v-if="characteristic.characteristic.properties.read" v-on:click="value_read(characteristic)">Read</button>
+                          <button class="btn btn-secondary btn-sm" v-if="characteristic.characteristic.properties.write || characteristic.characteristic.properties.writeWithoutResponse || characteristic.characteristic.properties.authenticatedSignedWrites" v-on:click="value_write(characteristic)">Write</button>
+                          <button class="btn btn-secondary btn-sm" v-if="characteristic.characteristic.properties.notify" v-on:click="notify_enable(characteristic)"><span v-if="characteristic.notify_enabled">Disable Notify</span><span v-else>Enable Notify</span></button>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+            </div>
+
+            <!--
+                UUID
+            -->
+            <div id="uuid" class="tab-pane fade">
+                <h2 class="modal-header">UUID</h2>
+                <button class="btn btn-secondary" v-on:click="uuid_generate">生成</button>&nbsp;<button class="btn btn-secondary" v-on:click="uuid_parse">解析</button>
+                <input class="form-control" v-model="uuid_input">
+                <br>
+                <label class="title">UUID</label>
+                <div class="input-group">
+                    <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(uuid_uuid)"></button>
+                    <input type="text" class="form-control" v-model="uuid_uuid" readonly>
+                </div>
+                <label class="title">バイト配列</label>
+                <div class="input-group">
+                    <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(uuid_array)"></button>
+                    <input type="text" class="form-control" v-model="uuid_array" readonly>
+                </div>
+            </div>
+
+            <!--
+                画像ファイル
+            -->
+            <div id="image" class="tab-pane fade">
+                <h2 class="modal-header">画像ファイル</h2>
+                <input class="form-control" type="file" id="image_file" v-on:change="image_open" v-on:click="image_click">
+                <label class="title">mime-type</label> {{image_type}}&nbsp;&nbsp;<label class="title">size</label> {{image_size.width}}x{{image_size.height}}<br>
+                <br>
+                <div class="row">
+                    <label class="col-auto title">icon size</label>
+                    <span class="col-auto">
+                        <select class="form-select" v-model="image_icon">
+                            <option v-for="(item, name) in image_icon_list" v-bind:value="name">{{name}}</option>
+                        </select>
+                    </span>
+                    <span class="col-auto">{{image_icon_list[image_icon]}}</span>
+                </div>
+                <div class="row">
+                    <label class="col-auto title">rotate</label>
+                    <span class="col-auto">
+                        <select class="form-select" v-model.number="image_rotate" v-on:change="image_scale_change">
+                            <option value="0">0°</option>
+                            <option value="90">90°</option>
+                            <option value="180">180°</option>
+                            <option value="270">270°</option>
+                        </select>
+                    </span>
+                </div>
+                <div class="container">
+                    <div class="row">
+                        <label class="col-auto title">scale</label>
+                        <span class="col-auto">
+                            <select class="form-select" v-model="image_scale" v-on:change="image_scale_change">
+                                <option value="cover">cover</option>
+                                <option value="contain">contain</option>
+                                <option value="crop">crop</option>
+                            </select>
+                        </span>
+                    </div>
+                    <br>
+                    <button class="btn btn-primary" v-on:click="image_save()">ファイルに保存</button><br>
+                    <br>
+                    <div class="row">
+                        <div class="col-6 text-center"><label class="title">オリジナル</label></div>
+                        <div class="col-1"></div>
+                        <div class="col-5 text-center"><label class="title">scale変換後</label></div>
+                    </div>
+                    <div class="row">
+                        <span class="col-6">
+                            <img v-if="!image_src" class="center-block" src="img/image_drop.png" v-on:drop="image_drop" v-on:dragover="file_drag">
+                            <img v-if="image_src" class="img-fluid img-thumbnail" v-bind:src="image_src" v-on:drop="image_drop" v-on:dragover="file_drag">
+                        </span>
+                        <div class="col-1"></div>
+                        <canvas v-if="image_src" class="col-5 img-fluid img-thumbnail" id="image_icon"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!--
+                QRコード
+            -->
+            <div id="qrcode" class="tab-pane fade show active">
+                <h2 class="modal-header">QRコード</h2>
+                <collapse-panel id="qrcode_create_panel" title="QRコード生成">
+                    <span slot="content">
+                        <div class="card-body">
+                            <label class="title">入力</label>
+                            <input type="text" class="form-control" v-model="qrcode_input">
+                            <button class="btn btn-primary" v-on:click="qrcode_create()">生成</button><br>
+                            <br>
+                            <div id="qrcode_area"></div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" data-bs-toggle="collapse" href="#qrcode_create_panel">閉じる</button>
+                        </div>
+                    </span>
+                </collapse-panel>
+
+                <collapse-panel id="qrcode_scan_panel" title="QRコードスキャン" collapse="true">
+                    <span slot="content">
+                        <div class="card-body">
+                            <label class="title">scaned data</label>
+                            <div class="input-group">
+                                <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(qrcode_scaned_data)"></button>
+                                <input type="text" class="form-control" v-model="qrcode_scaned_data" readonly>
+                            </div><br>
+                            <button class="btn btn-primary" v-on:click="qrcode_scan()">{{qrcode_btn}}</button><br>
+                            <div>
+                                <img class="img-fluid" v-show="!qrcode_running && qrcode_scaned_data==''" id="qrcode_start" src="./img/qrcode_start.png"><br>
+                                <video class="img-fluid" v-show="qrcode_running" id="qrcode_camera" autoplay></video>
+                                <canvas class="img-fluid" v-show="!qrcode_running && qrcode_scaned_data!=''" id="qrcode_canvas"></canvas>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" data-bs-toggle="collapse" href="#qrcode_scan_panel">閉じる</button>
+                        </div>
+                    </span>
+                </collapse-panel>
+            </div>
+
+            <!--
+                文字列
+            -->
+            <div id="string" class="tab-pane fade">
+                <h2 class="modal-header">文字列</h2>
+                <h3>UTF-8 ⇔ バイト配列</h3>
+                <label class="title">入力</label>
+                <textarea class="form-control" rows="3" v-model="string_input"></textarea>
+                <button class="btn btn-primary" v-on:click="string_encode(true)">toバイト配列</button>
+                <button class="btn btn-primary" v-on:click="string_encode(false)">fromバイト配列</button><br>
+                <label class="title">出力</label><br>
+                <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(string_output)"></button>
+                <textarea class="form-control" rows="3" readonly>{{string_output}}</textarea>
+            </div>
+
+            <!--
+                暗号化
+            -->
+            <div id="crypto" class="tab-pane fade">
+                <h2 class="modal-header">暗号化</h2>
+                <h3>HMAC(SHA256)</h3>
+                <label class="title">入力</label>
+                <textarea class="form-control" rows="2" v-model="hmac_input"></textarea>
+                <label class="title">シークレット</label>
+                <textarea class="form-control" rows="1" v-model="hmac_secret"></textarea>
+                <button class="btn btn-primary" v-on:click="crypto_hmac()">生成</button><br>
+                <label class="title">出力</label><br>
+                <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(hmac_output)"></button>
+                <textarea class="form-control" rows="2" readonly>{{hmac_output}}</textarea>
+
+                <h3>AES</h3>
+                <label class="title">入力</label>
+                <textarea class="form-control" rows="3" v-model="aes_input"></textarea>
+                <label class="title">初期ベクトル</label>
+                <textarea class="form-control" rows="1" v-model="aes_iv"></textarea>
+                <label class="title">暗号鍵</label>
+                <textarea class="form-control" rows="1" v-model="aes_secret"></textarea>
+                <button class="btn btn-primary" v-on:click="crypto_aes(true)">暗号化</button>
+                <button class="btn btn-primary" v-on:click="crypto_aes(false)">復号化</button><br>
+                <label class="title">出力</label><br>
+                <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(aes_output)"></button>
+                <textarea class="form-control" rows="3" readonly>{{aes_output}}</textarea>
+            </div>
+
+            <!--
+                エンコーディング
+            -->
+            <div id="encode" class="tab-pane fade">
+                <h2 class="modal-header">エンコーディング</h2>
+                <h3>Base64エンコード</h3>
+                <label class="title">入力</label>
+                <textarea class="form-control" rows="5" v-model="base64_input"></textarea>
+                <button class="btn btn-primary" v-on:click="base64_encode(true)">エンコード</button>
+                <button class="btn btn-primary" v-on:click="base64_encode(false)">デコード</button>&nbsp;&nbsp;
+                <button class="btn btn-primary" v-on:click="base64_encode(true, true)">バイナリエンコード</button>
+                <button class="btn btn-primary" v-on:click="base64_encode(false, true)">バイナリデコード</button><br>
+                <label class="title">出力</label><br>
+                <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(base64_output)"></button>
+                <textarea class="form-control" rows="5" readonly>{{base64_output}}</textarea>
+
+                <h3>Base64URLエンコード</h3>
+                <label class="title">入力</label>
+                <textarea class="form-control" rows="5" v-model="base64url_input"></textarea>
+                <button class="btn btn-primary" v-on:click="base64url_encode(true)">バイナリエンコード</button>
+                <button class="btn btn-primary" v-on:click="base64url_encode(false)">バイナリデコード</button><br>
+                <label class="title">出力</label><br>
+                <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(base64url_output)"></button>
+                <textarea class="form-control" rows="5" readonly>{{base64url_output}}</textarea>
+
+                <h3>URLエンコード</h3>
+                <label class="title">入力</label>
+                <input type="text" class="form-control" v-model="url_input">
+                <button class="btn btn-primary" v-on:click="url_encode(true)">エンコード</button>
+                <button class="btn btn-primary" v-on:click="url_encode(false)">デコード</button><br>
+                <label class="title">出力</label>
+                <div class="input-group">
+                    <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(url_output)"></button>
+                    <input type="text" class="form-control" v-model="url_output" readonly>
+                </div>
+
+                <h3>HTMLエンティティエンコード</h3>
+                <label class="title">入力</label>
+                <input type="text" class="form-control" v-model="html_input">
+                <button class="btn btn-primary" v-on:click="html_encode(encode_html_space)">エンコード</button>
+                <input type="checkbox" v-model="encode_html_space">半角スペース<br>
+                <label class="title">出力</label>
+                <div class="input-group">
+                    <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(html_output)"></button>
+                    <input type="text" class="form-control" v-model="html_output" readonly>
+                </div>
+            </div>
+
+            <!--
+                パスワード
+            -->
+            <div id="passwd" class="tab-pane fade">
+                <h2 class="modal-header">パスワード</h2>
+                <div class="row">
+                    <label class="col-auto col-form-label title">パスワード文字数</label>
+                    <span class="col-auto">
+                        <input type="number" class="form-control" size="2" v-model.number="passwd_num">
+                    </span>
+                    文字
+                </div>
+                <br>
+                <div class="row">
+                    <span class="col-auto">
+                        <input type="checkbox" v-model="passwd_check_lower_letter">小文字
+                    </span>
+                    <span class="col-auto">
+                        <input type="checkbox" v-model="passwd_check_upper_letter">大文字　
+                    </span>
+                    <span class="col-auto">
+                        <input type="checkbox" v-model="passwd_check_ecept_lO">IとlとOを除く(大文字のアイと小文字のエルと大文字のオー)
+                    </span>
+                </div>
+                <div class="row">
+                    <span class="col-auto">
+                        <input type="checkbox" v-model="passwd_check_number">数字
+                    </span>
+                    <span class="col-auto">
+                        <input type="number" class="form-control" size="2" v-model.number="passwd_number_num">
+                    </span>
+                    個
+                </div>
+                <div class="row">
+                    <span class="col-auto">
+                        <input type="checkbox" v-model="passwd_check_symbol">記号
+                    </span>
+                    <span class="col-auto">
+                        <select class="form-select" v-model="passwd_symbol_pattern">
+                            <option value="-+*/_">-+*/_</option>
+                            <option value="=-+*/;,._">=-+*/;,._</option>
+                            <option value="@#$%&?!">@#$%&?!</option>
+                            <option value="!@#$%^&*()_+-=[]{}|">!@#$%^&*()_+-=[]{}|</option>
+                            <option value="!#$%&()=-\@+*/?'^~|`;,._[]{}">!#$%&()=-\@+*/?'^~|`;,._[]{}</option>
+                        </select>
+                    </span>
+                    <span class="col-auto">
+                        <input type="number" class="form-control" size="2" v-model.number="passwd_symbol_num">
+                    </span>
+                    個　
+                </div>
+                <button class="btn btn-primary" v-on:click="passwd_create()">生成</button><br>
+                <br>
+                <div class="input-group">
+                    <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(passwd_password)"></button>
+                    <input type="text" class="form-control" v-model="passwd_password" readonly>
+                </div>
+            </div> 
+
+            <!--
+                カラー
+            -->
+            <div id="color" class="tab-pane fade">
+                <h2 class="modal-header">カラー</h2>
+                <div class="row">
+                    <span class="col-auto">
+                        <input type="color" class="form-control-color" v-on:change="color_change" v-model="color_value">&nbsp;&nbsp;
+                    </span>
+                    <span class="col-auto">
+                        <label class="col-form-label title">RGB:</label>
+                    </span>
+                    <span class="col-auto">
+                        <input type="text" size="7" class="form-control" v-model="color_value">
+                    </span>
+                </div>
+                <br>
+                <table class="table table-borderless lead">
+                    <td v-bind:style="{ 'background-color': color_value }">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                    <td><label class="title">R:</label><input class="form-range" type="range" min="0" max="255" v-model.number="color_r" v-on:input="color_range"><input type="number" class="form-control" v-model.number="color_r" v-on:change="color_range"></td>
+                    <td><label class="title">G:</label><input class="form-range" type="range" min="0" max="255" v-model.number="color_g" v-on:input="color_range"><input type="number" class="form-control" v-model.number="color_g" v-on:change="color_range"></td>
+                    <td><label class="title">B:</label><input class="form-range" type="range" min="0" max="255" v-model.number="color_b" v-on:input="color_range"><input type="number" class="form-control" v-model.number="color_b" v-on:change="color_range"></td>
+                </table>
+                <br>
+                <h4>一番近い色 <button class="btn btn-secondary btn-sm" v-on:click="color_do_near">検索</button></h4>
+                <div v-if="color_near">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>選択</th><th>カラー</th><th>名称</th><th>RGB</th><th>R</th><th>G</th><th>B</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><button class="btn btn-secondary btn-xs" v-on:click="color_select(color_near.rgb)">選択</button></td>
+                                <td v-bind:style="{ 'background-color': color_near.rgb }" v-on:click="color_select(color_near.rgb)"></td><td><label class="title">{{color_near.name}}</label></td>
+                                <td>{{color_near.rgb.toLowerCase()}}</td><td>{{rgb2num(color_near.rgb, 'r')}}</td><td>{{rgb2num(color_near.rgb, 'g')}}</td><td>{{rgb2num(color_near.rgb, 'b')}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h4>基本16色</h4>
+                <table class="table table-striped">
+                    <thead>
+                        <tr><th>選択</th><th>カラー</th><th>名称</th><th>RGB</th><th>R</th><th>G</th><th>B</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in color_basic_list">
+                            <td><button class="btn btn-secondary btn-xs" v-on:click="color_select(item.rgb)">選択</button></td>
+                            <td v-bind:style="{ 'background-color': item.rgb }" v-on:click="color_select(item.rgb)"></td><td><label class="title">{{item.name}}</label></td>
+                            <td>{{item.rgb.toLowerCase()}}</td><td>{{rgb2num(item.rgb, 'r')}}</td><td>{{rgb2num(item.rgb, 'g')}}</td><td>{{rgb2num(item.rgb, 'b')}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="table table-striped">
+                    <thead>
+                        <tr><th>選択</th><th>カラー</th><th>名称</th><th>RGB</th><th>R</th><th>G</th><th>B</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in color_list">
+                            <td><button class="btn btn-secondary btn-xs" v-on:click="color_select(item.rgb)">選択</button></td>
+                            <td v-bind:style="{ 'background-color': item.rgb }" v-on:click="color_select(item.rgb)"></td><td><label class="title">{{item.name}}</label></td>
+                            <td>{{item.rgb.toLowerCase()}}</td><td>{{rgb2num(item.rgb, 'r')}}</td><td>{{rgb2num(item.rgb, 'g')}}</td><td>{{rgb2num(item.rgb, 'b')}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!--
+                バイナリファイル
+            -->
+            <div id="binary" class="tab-pane fade">
+                <h2 class="modal-header">バイナリファイル</h2>
+                <input class="form-control" type="file" id="binary_file" v-on:change="binary_open" v-on:click="binary_click">
+                <label class="title">mime-type</label> {{binary_type}}
+                <button v-if="binary_type.startsWith('image/') || binary_type.startsWith('text/')" class="btn btn-secondary btn-sm" v-on:click="dialog_open('#binary_image_dialog')">内容表示</button><br><br>
+                <div class="row" v-on:change="binary_change()">
+                    <label class="col-auto col-form-label title">変換</label>
+                    <span class="col-auto">
+                        <select class="form-select" v-model="binary_format">
+                            <option value="none" selected>無し</option>
+                            <option value="cr">改行</option>
+                            <option value="dataurl">Data URL</option>
+                        </select>
+                    </span>
+                </div>
+                <div v-if="binary_format=='cr'" class="row">
+                    <span class="col-auto">
+                        <select class="form-select" v-model.number="binary_cr_num">
+                            <option value="0">無し</option>
+                            <option value="2">2バイト</option>
+                            <option value="4">4バイト</option>
+                            <option value="8">8バイト</option>
+                            <option value="16">16バイト</option>
+                        </select>
+                    </span>
+                    <span class="col-auto">
+                        <input type="checkbox" v-model="binary_space">空白　
+                    </span>
+                    <button class="col-auto btn btn-secondary" v-on:click="binary_cr()">整形</button><br>
+                </div>
+                <textarea class="form-control" rows="10" v-on:drop="binary_drop" v-on:dragover="file_drag" readonly>{{binary_output}}</textarea>
+                <br>
+                <button class="btn btn-secondary btn-sm" v-on:click="binary_copy()">Copy</button><br>
+                <textarea class="form-control" rows="10" v-model="binary_input"></textarea>
+                <button class="btn btn-secondary" v-on:click="binary_save()">ファイルに保存</button><br>
+            </div>
+
+            <!--
+                バイト配列
+            -->
+            <div id="array" class="tab-pane fade">
+                <h2 class="modal-header">バイト配列</h2>
+                <label class="title">長さ</label> {{array_base.length}}<br>
+                <br>
+                <button class="btn btn-secondary" v-on:click="array_set(0)">変換</button>
+                (例) 0011aabb
+                <input type="text" class="form-control" v-model="array_pattern[0]">
+                <br>
+                <button class="btn btn-secondary" v-on:click="array_set(1)">変換</button>
+                (例) 00 11 aa bb
+                <input type="text" class="form-control" v-model="array_pattern[1]">
+                <br>
+                <button class="btn btn-secondary" v-on:click="array_set(2)">変換</button>
+                (例) 0x00, 0x11, 0xaa, 0xbb
+                <input type="text" class="form-control" v-model="array_pattern[2]">
+                <br>
+                <button class="btn btn-secondary" v-on:click="array_set(3)">変換</button>
+                (例) (byte)0x00, (byte)0x11, (byte)0xaa, (byte)0xbb
+                <input type="text" class="form-control" v-model="array_pattern[3]">
+                <br>
+                <button class="btn btn-secondary" v-on:click="array_set(4)">変換</button>
+                (例) 0, 1, 2, 3, 4
+                <input type="text" class="form-control" v-model="array_pattern[4]">
+                <br>
+                <br>
+                <div class="card">
+                    <div class="card-header">乱数生成</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <span class="col-auto">
+                                <label class="title">長さ</label>
+                            </span>
+                            <span class="col-auto">
+                                <input type="number" class="form-control" v-model.number="array_random_length">
+                            </span>
+                            <span class="col-auto">
+                                <button class="btn btn-secondary btn-sm" v-on:click="array_random_generate">乱数生成</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--
+                日時
+            -->
+            <div id="date" class="tab-pane fade">
+                <h2 class="modal-header">日時</h2>
+                <div class="card">
+                    <div class="card-header">
+                        基準日時
+                        <button class="btn btn-secondary" v-on:click="date_get_now('base')">現在時間</button>
+                        <button class="btn btn-secondary" v-on:click="date_input_dialog('base')">手動設定</button>
+                    </div>
+                    <div class="card-body">
+                        <label class="title">UNIX時間(msec)</label>
+                        <input type="text" class="form-control" v-model="date_unix" readonly>
+                        <label class="title">ISO-8601(UTC)</label>
+                        <input type="text" class="form-control" v-model="date_iso" readonly>
+                        <label class="title">ISO-8601(JST)</label>
+                        <input type="text" class="form-control" v-model="date_iso2" readonly>
+                        <label class="title">Locale</label>
+                        <input type="text" class="form-control" v-model="date_locale" readonly>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        経過期間
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <button class="col-auto btn btn-secondary btn-sm" v-on:click="date_duration_reset">リセット</button>
+                            <span class="col-auto">
+                                <select class="form-select" v-on:change="date_process()" v-model="date_duration_unit">
+                                    <option value="year">年</option>
+                                    <option value="month">月</option>
+                                    <option value="day">日</option>
+                                    <option value="hour">時</option>
+                                    <option value="minute">分</option>
+                                    <option value="second">秒</option>
+                                </select>
+                            </span>
+                            <span class="col-auto">
+                                <input type="number" class="form-control" v-on:change="date_process()" v-model.number="date_duration">
+                            </span>
+                            &nbsp;&nbsp;
+                            <button class="col-auto btn btn-primary btn-sm" v-on:click="date_process()">経過期間→経過後日時</button>
+                            &nbsp;
+                            <button class="col-auto btn btn-primary btn-sm" v-on:click="date_elapsed_process()">経過後日時→経過期間</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        経過後日時
+                        <button class="btn btn-secondary" v-on:click="date_get_now('elapsed')">現在時間</button>
+                        <button class="btn btn-secondary" v-on:click="date_input_dialog('elapsed')">手動設定</button>
+                    </div>
+                    <div class="card-body">
+                        <label class="title">UNIX時間(msec)</label>
+                        <input type="text" class="form-control" v-model="date_unix_after" readonly>
+                        <label class="title">ISO-8601(UTC)</label>
+                        <input type="text" class="form-control" v-model="date_iso_after" readonly>
+                        <label class="title">ISO-8601(JST)</label>
+                        <input type="text" class="form-control" v-model="date_iso2_after" readonly>
+                        <label class="title">Locale</label>
+                        <input type="text" class="form-control" v-model="date_locale_after" readonly>
+                    </div>
+                </div>
+                <collapse-panel id="date_tostring_panel" title="toLocaleString" collapse="true">
+                    <span slot="content">
+                        <div class="card-body">
+                            <h3><label class="title">{{date_tostring}}</label> {{date_localestring}}</h3>
+                            {{date_tolocalestring_string}}<br><br>
+                            <div v-on:change="date_option_change">
+                                <div class="row">
+                                    <label class="col-auto col-form-label title">toString</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_tostring">
+                                            <option value="toLocaleString">toLocaleString</option>
+                                            <option value="toLocaleDateString">toLocaleDateString</option>
+                                            <option value="toLocaleTimeString">toLocaleTimeString</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">locales</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_locales">
+                                            <option value="ja-JP">ja-JP</option>
+                                            <option value="ja-JP-u-ca-japanese">ja-JP-u-ca-japanese</option>
+                                        </select>
+                                    </span>
+                                </div>
+                                <div class="row">
+                                    <label class="col-auto col-form-label title">era</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.era">
+                                            <option value=""></option>
+                                            <option value="narrow">narrow</option>
+                                            <option value="short">short</option>
+                                            <option value="long">long</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">year</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.year">
+                                            <option value=""></option>
+                                            <option value="numeric">numeric</option>
+                                            <option value="2-digit">2-digit</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">month</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.month">
+                                            <option value=""></option>
+                                            <option value="numeric">numeric</option>
+                                            <option value="2-digit">2-digit</option>
+                                            <option value="narrow">narrow</option>
+                                            <option value="short">short</option>
+                                            <option value="long">long</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">day</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.day">
+                                            <option value=""></option>
+                                            <option value="numeric">numeric</option>
+                                            <option value="2-digit">2-digit</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">weekday</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.weekday">
+                                            <option value=""></option>
+                                            <option value="narrow">narrow</option>
+                                            <option value="short">short</option>
+                                            <option value="long">long</option>
+                                        </select>
+                                    </span>
+                                </div>
+                                <div class="row">
+                                    <label class="col-auto col-form-label title">hour12</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.hour12">
+                                            <option value=""></option>
+                                            <option value="true">true</option>
+                                            <option value="false">false</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">hour</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.hour">
+                                            <option value=""></option>
+                                            <option value="numeric">numeric</option>
+                                            <option value="2-digit">2-digit</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">minute</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.minute">
+                                            <option value=""></option>
+                                            <option value="numeric">numeric</option>
+                                            <option value="2-digit">2-digit</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">second</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.second">
+                                            <option value=""></option>
+                                            <option value="numeric">numeric</option>
+                                            <option value="2-digit">2-digit</option>
+                                        </select>
+                                    </span>
+                                    <label class="col-auto col-form-label title">timeZoneName</label>
+                                    <span class="col-auto">
+                                        <select class="form-select" v-model="date_option.timeZoneName">
+                                            <option value=""></option>
+                                            <option value="short">short</option>
+                                            <option value="long">long</option>
+                                        </select>
+                                    </span>
+                                </div>
+                            </div>
+                            <hr>
+                            <h3><label class="title">toISOString</label> {{new Date().toISOString()}}</h3>
+                            <h3><label class="title">toUTCString</label> {{new Date().toUTCString()}}</h3>
+                        </div>
+                    </span>
+                </collapse-panel>
+            </div>
+
+            <!--
+                基数
+            -->
+            <div id="cardinal" class="tab-pane fade">
+                <h2 class="modal-header">基数</h2>
+                <label class="title">10進数</label>
+                <div class="row">
+                    <span class="col-auto">
+                        <div class="input-group">
+                            <button class="col-auto btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(cardinal_decimal)"></button>
+                            <input type="text" size="40" class="form-control text-end" v-model="cardinal_decimal">
+                        </div>
+                    </span>
+                    <button class="col-auto btn btn-secondary" v-on:click="cardinal_convart(10)">セット</button>&nbsp;&nbsp;
+                    <div class="col-auto btn-group">
+                        <button class="btn btn-secondary" v-on:click="cardinal_shift(10, 'left')">&lt;&lt;</button>
+                        <button class="btn btn-secondary" v-on:click="cardinal_shift(10, 'right')">&gt;&gt;</button>&nbsp;&nbsp;
+                    </div>
+                </div>
+                <br>
+                <label class="title">2進数</label>
+                <div class="row">
+                    <span class="col-auto">
+                        <div class="input-group">
+                            <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(cardinal_binary)"></button>
+                            <input type="text" size="40" class="form-control text-end" v-model="cardinal_binary">
+                        </div>
+                    </span>
+                    <button class="col-auto btn btn-secondary" v-on:click="cardinal_convart(2)">セット</button>&nbsp;&nbsp;
+                    <div class="col-auto btn-group">
+                        <button class="btn btn-secondary" v-on:click="cardinal_shift(2, 'left')">&lt;&lt;</button>
+                        <button class="btn btn-secondary" v-on:click="cardinal_shift(2, 'right')">&gt;&gt;</button>&nbsp;&nbsp;
+                    </div>
+                    <div class="col-auto">
+                        <input type="checkbox" v-model="cardinal_check_binary">0埋め
+                    </div>
+                    <span class="col-auto">
+                        <input type="text" class="form-control" size="2" v-model="cardinal_binary_num">
+                    </span>
+                    桁
+                </div>
+                <br>
+                <label class="title">16進数</label>
+                <div class="row">
+                    <span class="col-auto">
+                        <div class="input-group">
+                            <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(cardinal_hexadecimal)"></button>
+                            <input type="text" size="40" class="form-control text-end" v-model="cardinal_hexadecimal">
+                        </div>
+                    </span>
+                    <button class="col-auto btn btn-secondary" v-on:click="cardinal_convart(16)">セット</button>&nbsp;&nbsp;
+                    <div class="col-auto btn-group">
+                        <button class="btn btn-secondary" v-on:click="cardinal_shift(16, 'left')">&lt;&lt;</button>
+                        <button class="btn btn-secondary" v-on:click="cardinal_shift(16, 'right')">&gt;&gt;</button>&nbsp;&nbsp;
+                    </div>
+                    <span class="col-auto">
+                        <input type="checkbox" v-model="cardinal_check_hexadecimal">0埋め
+                    </span>
+                    <span class="col-auto">
+                        <input type="text" class="form-control" size="2" v-model="cardinal_hexadecimal_num">
+                    </span>
+                    桁
+                </div>
+            </div>
+
+            <!--
+                クリップ
+            -->
+            <div id="clip" class="tab-pane fade">
+                <h2 class="modal-header">クリップ</h2>
+                <span class="oi oi-trash">クッキーから消去</span>&nbsp;&nbsp;
+                <span class="oi oi-clipboard">クッキーに保存</span>&nbsp;&nbsp;
+                <span class="oi oi-paperclip">クリップボードにコピー</span>&nbsp;&nbsp;
+                <br><br>
+                <button class="btn btn-secondary" v-on:click="clip_clearall()">クッキーから全消去</button><br>
+                <label class="title">入力0</label>
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button class="btn btn-secondary oi oi-trash" v-on:click="clip_clear(0)"></button>
+                        <button class="btn btn-secondary oi oi-clipboard" v-on:click="clip_save(0)"></button>
+                        <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(clip_data[0])"></button>
+                    </span>
+                    <input type="text" class="form-control" v-model="clip_data[0]">
+                </div>
+                <label class="title">入力1</label>
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button class="btn btn-secondary oi oi-trash" v-on:click="clip_clear(1)"></button>
+                        <button class="btn btn-secondary oi oi-clipboard" v-on:click="clip_save(1)"></button>
+                        <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(clip_data[1])"></button>
+                    </span>
+                    <input type="text" class="form-control" v-model="clip_data[1]">
+                </div>
+                <label class="title">入力2</label>
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button class="btn btn-secondary oi oi-trash" v-on:click="clip_clear(2)"></button>
+                        <button class="btn btn-secondary oi oi-clipboard" v-on:click="clip_save(2)"></button>
+                        <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(clip_data[2])"></button>
+                    </span>
+                    <input type="text" class="form-control" v-model="clip_data[2]">
+                </div>
+                <label class="title">入力3</label>
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button class="btn btn-secondary oi oi-trash" v-on:click="clip_clear(3)"></button>
+                        <button class="btn btn-secondary oi oi-clipboard" v-on:click="clip_save(3)"></button>
+                        <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(clip_data[3])"></button>
+                    </span>
+                    <input type="text" class="form-control" v-model="clip_data[3]">
+                </div>
+                <label class="title">入力4</label>
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button class="btn btn-secondary oi oi-trash" v-on:click="clip_clear(4)"></button>
+                        <button class="btn btn-secondary oi oi-clipboard" v-on:click="clip_save(4)"></button>
+                        <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(clip_data[4])"></button>
+                    </span>
+                    <input type="text" class="form-control" v-model="clip_data[4]">
+                </div>
+                <label class="title">入力5</label>
+                <span class="input-group-btn">
+                    <button class="btn btn-secondary oi oi-trash" v-on:click="clip_clear(5)"></button>
+                    <button class="btn btn-secondary oi oi-clipboard" v-on:click="clip_save(5)"></button>
+                    <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(clip_data[5])"></button>
+                </span>
+                <textarea class="form-control" rows="2" v-model="clip_data[5]"></textarea>
+                <label class="title">入力6</label>
+                <span class="input-group-btn">
+                    <button class="btn btn-secondary oi oi-trash" v-on:click="clip_clear(6)"></button>
+                    <button class="btn btn-secondary oi oi-clipboard" v-on:click="clip_save(6)"></button>
+                    <button class="btn btn-secondary oi oi-paperclip" v-on:click="clip_copy(clip_data[6])"></button>
+                </span>
+                <textarea class="form-control" rows="5" v-model="clip_data[6]"></textarea>
+            </div>
+
+            <!--
+                元号
+            -->
+            <div id="gengou" class="tab-pane fade">
+                <h2 class="modal-header">元号</h2>
+                <div class="row">
+                    <label class="col-auto col-form-label title">和暦</label>
+                    <span class="col-auto">
+                        <select class="form-select" v-model="gengou_era_name">
+                            <option value="令和">令和</option>
+                            <option value="平成">平成</option>
+                            <option value="昭和">昭和</option>
+                            <option value="大正">大正</option>
+                            <option value="明治">明治</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </span>
+                    <span class="col-auto">
+                        <input type="text" class="form-control" size="5" v-model="gengou_era_other" v-if="gengou_era_name=='その他'">
+                    </span>
+                    <span class="col-auto">
+                        <input type="number" class="form-control" size="4" v-model.number="gengou_era_year">
+                    </span>
+                    <label class="col-auto col-form-label">年</label>
+                    <button class="col-auto btn btn-primary" v-on:click="gengou_to_anno()">変換</button>
+                </div>
+                <div class="row">
+                    <label class="col-auto col-form-label title">西暦</label>
+                    <span class="col-auto">
+                        <input type="number" class="form-control" size="5" v-model.number="gengou_anno_year">
+                    </span>
+                    <label class="col-auto col-form-label">年</label>
+                    <button class="col-auto btn btn-primary" v-on:click="gengou_to_era()">変換</button>
+                </div>
+                <hr>
+                <table class="table table-striped">
+                    <thead>
+                        <tr><th>元号</th><th>読み</th><th>始期</th><th></th><th>終期</th><th>備考</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in gengou_list">
+                            <td>{{item.name}}</td><td>{{item.yomi}}</td><td>{{item.start}}</td><td>～</td><td>{{item.end}}</td><td>{{item.extra}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!--
+                スクレイピング
+            -->
+            <div id="scraping" class="tab-pane fade">
+                <h2 class="modal-header">スクレイピング</h2>
+                <p>
+                    ※動作させるにはサーバが必要です。
+                </p>
+                <div class="row">
+                    <label class="col-auto col-form-label title">ApiKey</label>
+                    <span class="col-auto">
+                        <input type="password" class="form-control" v-model="server_apikey">
+                    </span>
+                </div>
+                <label class="title">URL</label>
+                <input type="text" class="form-control" v-model="server_url">
+                <hr>
+                <h3>京急運行情報</h3>
+                <button class="btn btn-primary" v-on:click="scraping_keikyu()">更新</button><br>
+                <label class="title">受信日時</label>{{scraping_keikyu_received_date}}
+                <textarea class="form-control" rows="4" readonly>{{scraping_keikyu_message}}</textarea>
+                <hr>
+            </div>
+    
+            <!--
+                整形
+            -->
+            <div id="arrange" class="tab-pane fade">
+                <h2 class="modal-header">整形</h2>
+                <collapse-panel id="json_arrange_panel" title="JSON" collapse="true">
+                    <span slot="content">
+                        <div class="card-body">
+                            <button class="btn btn-secondary" v-on:click="arrange_process('json')">整形</button><br>
+                            <label class="title">入出力</label>
+                            <textarea class="form-control" rows="20" v-model="json_inout"></textarea>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" data-bs-toggle="collapse" href="#json_arrange_panel">閉じる</button>
+                        </div>
+                    </span>
+                </collapse-panel>
+                <collapse-panel id="js_arrange_panel" title="Javascript" collapse="true">
+                    <span slot="content">
+                        <div class="card-body">
+                            <button class="btn btn-secondary" v-on:click="arrange_process('javascript')">整形</button><br>
+                            <label class="title">入出力</label>
+                            <textarea class="form-control" rows="20" v-model="js_inout"></textarea>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" data-bs-toggle="collapse" href="#js_arrange_panel">閉じる</button>
+                        </div>
+                    </span>
+                </collapse-panel>
+                <collapse-panel id="marked_arrange_panel" title="Markdown" collapse="true">
+                    <span slot="content">
+                        <div class="card-body">
+                            <button class="btn btn-secondary" v-on:click="arrange_convert('marked_view')">表示</button>
+                            <button class="btn btn-secondary" v-on:click="arrange_convert('marked_html')">HTML</button><br>
+                            <label class="title">入力</label>
+                            <textarea class="form-control" rows="20" v-model="marked_inout"></textarea>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" data-bs-toggle="collapse" href="#marked_arrange_panel">閉じる</button>
+                        </div>
+                    </span>
+                </collapse-panel>
+                <collapse-panel id="html_arrange_panel" title="HTML" collapse="true">
+                    <span slot="content">
+                        <div class="card-body">
+                            <button class="btn btn-secondary" v-on:click="arrange_process('html')">整形</button><br>
+                            <label class="title">入出力</label>
+                            <textarea class="form-control" rows="20" v-model="html_inout"></textarea>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" data-bs-toggle="collapse" href="#html_arrange_panel">閉じる</button>
+                        </div>
+                    </span>
+                </collapse-panel>
+                <collapse-panel id="css_arrange_panel" title="CSS" collapse="true">
+                    <span slot="content">
+                        <div class="card-body">
+                            <button class="btn btn-secondary" v-on:click="arrange_process('css')">整形</button><br>
+                            <label class="title">入出力</label>
+                            <textarea class="form-control" rows="20" v-model="css_inout"></textarea>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-secondary" data-bs-toggle="collapse" href="#css_arrange_panel">閉じる</button>
+                        </div>
+                    </span>
+                </collapse-panel>
+            </div>
+
+            <!--
+                通知
+            -->
+            <div id="notify" class="tab-pane fade">
+                <h2 class="modal-header">通知</h2>
+                <p>
+                    ※動作させるにはサーバが必要です。
+                </p>
+                <div class="row">
+                    <label class="col-auto col-form-label title">ApiKey</label>
+                    <span class="col-auto">
+                        <input type="password" class="form-control" v-model="server_apikey">
+                    </span>
+                </div>
+                <label class="title">URL</label>
+                <input type="text" class="form-control" v-model="server_url">
+                <hr>
+                <h3>Gmail送信</h3>
+                <label class="title">メールアドレス</label>
+                <input type="text" class="form-control" v-model="notify_gmail_address">
+                <label class="title">メッセージ</label>
+                <textarea class="form-control" rows="2" v-model="notify_gmail_message"></textarea>
+                <button class="btn btn-primary" v-on:click="notify_gmail()">送信</button><br>
+                <hr>
+                <h3>LINE通知</h3>
+                <label class="title">メッセージ</label>
+                <textarea class="form-control" rows="2" v-model="notify_line_message"></textarea>
+                <button class="btn btn-primary" v-on:click="notify_line()">通知</button><br>
+            </div>
+
+            <!--
+                Qiita
+            -->
+            <div id="qiita" class="tab-pane fade">
+                <h2 class="modal-header">Qiita</h2>
+                <p>
+                    ※動作させるにはサーバが必要です。
+                </p>
+                <div class="row">
+                    <label class="col-auto col-form-label title">ApiKey</label>
+                    <span class="col-auto">
+                        <input type="password" class="form-control" v-model="server_apikey">
+                    </span>
+                </div>
+                <label class="title">URL</label>
+                <input type="text" class="form-control" v-model="server_url">
+                <hr>
+                <button class="btn btn-primary" v-on:click="qiita_items()">取得</button><br>
+                <label class="title">受信日時</label>{{qiita_items_received_date}}
+                <table class="table table-striped">
+                    <thead>
+                        <tr><th>#</th><th>タイトル</th><th>いいね数</th><th>View数</th><th>平均View数</th><th>経過日数</th><th>作成日</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in qiita_item_list">
+                            <td>{{index + 1}}</td><td><a v-bind:href="item.url" target="_blank">{{item.title}}</td></a><td>{{item.likes}}</td><td>{{item.views}}</td><td>{{item.average}}</td><td>{{item.elapsed_days}}</td><td>{{item.created_at}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <hr>
+            </div>
+
+            <!--
+                トレンドキーワード
+            -->
+            <div id="trend" class="tab-pane fade">
+                <h2 class="modal-header">トレンドキーワード</h2>
+                <p>
+                    ※動作させるにはサーバが必要です。
+                </p>
+                <div class="row">
+                    <label class="col-auto col-form-label title">ApiKey</label>
+                    <span class="col-auto">
+                        <input type="password" class="form-control" v-model="server_apikey">
+                    </span>
+                </div>
+                <label class="title">URL</label>
+                <input type="text" class="form-control" v-model="server_url">
+                <hr>
+                <button class="btn btn-primary" v-on:click="trend_get()">取得</button><br>
+                <label class="title">受信日時</label>{{trend_items_received_date}}
+                <table class="table table-striped">
+                    <thead>
+                        <tr><th>#</th><th>トレンドキーワード</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in trend_item_list">
+                            <td>{{index + 1}}</td><td><a v-bind:href="'https://www.google.com/search?hl=ja&q=' + item" target="_blank">{{item}}</td></a></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <hr>
+            </div>
+
+            <!--
+                ヘルプ
+            -->
+            <div id="help" class="tab-pane fade">
+                <h2 class="modal-header">ヘルプ</h2>
+                <ul>
+                    <li><a href="https://qiita.com/poruruba/items/6c67c7eef34ed302feb3" target="_blank">Qiita: 便利ページ：Javascriptでちょっとした便利な機能を作ってみた</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/f68455b2d937d2f052f4" target="_blank">Qiita: 便利ページ：自分のQiita記事を一覧表示</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/8aea492473a029a3865a" target="_blank">Qiita: 便利ページ：元号を変換してみた</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/2b4d978216131f5afa6a" target="_blank">Qiita: 便利ページ：トレンドキーワードを取得してみた</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/fb2442a6e4a679eae6e5" target="_blank">Qiita: 便利ページ：Javascriptで暗号化など追加</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/18f91780195abadbbb89" target="_blank">Qiita: 便利ページ：Javascriptでバイナリファイル操作</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/8c5ee3c56210b0b35e4a" target="_blank">Qiita: 便利ページ：Javascriptでカラーピッカー</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/59c3e6771aa9d957bfd0" target="_blank">Qiita: 便利ページ：JavascriptでQRコードスキャン</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/0d57d5b157a97a79dba6" target="_blank">Qiita: 便利ページ：データURLを生成する</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/268eb6b1f58bce3cff51" target="_blank">Qiita: 便利ページ：Javascriptでアイコンファイルを生成する</a></li>
+                    <li><a href="https://qiita.com/poruruba/items/653e9bbf6b725438442e" target="_blank">Qiita: 便利ページ：Web Bluetooth APIでBLEデバイスに接続</a></li>
+                </ul>
+            </div>
+
+        </div>
+        <br>
+
+        <div class="modal" id="date_input_dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">日時の入力</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <label class="col-auto col-form-label title">フリー入力</label>
+                            <span class="col-auto">
+                                <input type="text" class="form-control" v-model="date_input_free">
+                            </span>
+                            <button class="col-auto btn btn-primary" v-on:click="date_input_process('free')">入力</button>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <span class="col-auto">
+                                <input type="date" class="form-control" v-model="date_input_date">
+                            </span>
+                            <span class="col-auto">
+                                <input type="time" class="form-control" v-model="date_input_time">
+                            </span>
+                            <button class="col-auto btn btn-primary" v-on:click="date_input_process('control')">入力</button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" v-on:click="dialog_close('#date_input_dialog')">キャンセル</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="binary_image_dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">内容表示
+                            <span class="pull-right">
+                                <button class="btn btn-secondary" v-on:click="dialog_close('#binary_image_dialog')">閉じる</button>
+                            </span>
+                        </h4>
+                    </div>
+                    <div class="modal-body">
+                        <img v-if="binary_type.startsWith('image/')" v-bind:src="binary_dataurl" class="img-fluid" />
+                        <pre v-if="binary_type.startsWith('text/')">{{binary_text}}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <modal-dialog size="lg" id="marked_dialog">
+            <div slot="content">
+                <div class="modal-header">
+                    <button class="btn btn-secondary pull-right" v-on:click="dialog_close('#marked_dialog')">閉じる</button>
+                </div>
+                <div class="modal-body">
+                    <div v-show="marked_show_type=='marked_view'" id="marked_content"></div>
+                    <textarea v-if="marked_show_type=='marked_html'" rows="20" v-bind:value="marked_html" class="form-control"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" v-on:click="dialog_close('#marked_dialog')">閉じる</button>
+                </div>
+            </div>
+        </modal-dialog>
+
+
+        <!-- for progress-dialog -->
+        <progress-dialog v-bind:title="progress_title"></progress-dialog>
+    </div>
+
+    <script src="js/gengou.js"></script>
+    <script src="js/color.js"></script>
+    <script src="js/start.js"></script>
+</body>
